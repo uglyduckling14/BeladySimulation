@@ -2,6 +2,13 @@ plugins {
     id 'java'
 }
 
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'org.example.Assign6'
+        )
+    }
+}
 group 'org.example'
 version '1.0-SNAPSHOT'
 
