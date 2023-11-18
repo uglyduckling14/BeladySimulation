@@ -1,7 +1,7 @@
 package org.example;
 
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashMap;
+import java.util.HashSet;
 
 public class TaskLRU implements Runnable{
 
@@ -19,8 +19,8 @@ public class TaskLRU implements Runnable{
     @Override
     public void run() {
         int faults = 0;
-        ArrayList<Integer> currentPages = new ArrayList<>();
-        ArrayList<Integer> indexes = new ArrayList<>();
+        HashSet<Integer> currentPages = new HashSet<>(this.maxMemoryFrames);
+        HashMap<Integer, Integer> indexes = new HashMap<>();
         int i =0;
         for (int page: this.sequence) {
             if(currentPages.size() < this.maxMemoryFrames){
@@ -28,12 +28,12 @@ public class TaskLRU implements Runnable{
                     currentPages.add(page);
                     faults++;
                 }
-                indexes.add(page, i);
+                indexes.put(page, i);
             }else{
                 if(!currentPages.contains(page)){
                     int lru = this.maxPageReference;
-                    int index = 0;
-
+                    int index = -1;
+                    //should remove 2
                     for (int temp : currentPages) {
                         if (indexes.get(temp) < lru) {
                             lru = indexes.get(temp);
@@ -45,6 +45,7 @@ public class TaskLRU implements Runnable{
                     currentPages.add(page);
                     faults++;
                 }
+                indexes.put(page, i);
             }
             i++;
         }

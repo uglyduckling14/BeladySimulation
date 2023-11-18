@@ -1,26 +1,33 @@
 package org.example;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class Assign6 {
+    final static int MAX_PAGE_REFERENCE =250;
     static int numOfThreads = Runtime.getRuntime().availableProcessors();
     static ExecutorService pool = Executors.newFixedThreadPool(numOfThreads);
-    static int[] pageFaultsFIFO = new int[1000];
-    static int[] pageFaultsLRU = new int[1000];
-    static int[] pageFaultsMRU = new int[1000];
+    static int[] pageFaultsFIFO = new int[101];
+    static int[] pageFaultsLRU = new int[101];
+    static int[] pageFaultsMRU = new int[101];
 
     static int minFIFO = 0;
     static int minMRU = 0;
     static int minLRU = 0;
-
+    static AnomalyReport fifoReport = new AnomalyReport();
     public static void main(String[] args) {
+//        testLRU();
+//        testMRU();
         long initialTime = System.currentTimeMillis();
         for (int i=0; i< 1000; i++) {
             int[] pageRef = generatePageRef();
-            createTasks(pageRef);
-            addMin(findMin(i));
+            createTasks(pageRef, i);
+            pageFaultsFIFO = new int[101];
+            pageFaultsLRU = new int[101];
+            pageFaultsMRU = new int[101];
         }
 
         System.out.println("Simulation took "+ (System.currentTimeMillis()-initialTime) + " ms");
@@ -29,10 +36,21 @@ public class Assign6 {
         System.out.println("LRU min PF: " + minLRU);
         System.out.println("MRU min PF: " + minMRU);
 
+        System.out.println();
+        System.out.println("Belady's Anomaly Report for FIFO");
+        fifoReport.report();
+
+        System.out.println();
+        System.out.println("Belady's Anomaly Report for LRU");
+
+        System.out.println();
+        System.out.println("Belady's Anomaly Report for MRU");
+
         pool.shutdown();
     }
 
     private static int[] generatePageRef(){
+        ///int[] pageRef = {1, 2, 1, 3, 2, 1, 2, 3, 4};
         int[] pageRef = new int[1000];
         Random rand = new Random();
         for (int i = 0; i < 1000; i++) {
@@ -40,17 +58,104 @@ public class Assign6 {
         }
         return pageRef;
     }
+    public static void testMRU() {
+        int[] sequence1 = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+        int[] sequence2 = {1, 2, 1, 3, 2, 1, 2, 3, 4};
+        int[] pageFaults = new int[4];  // 4 because maxMemoryFrames is 3
 
-    private static void createTasks(int[] sequence){
+        // Replacement should be: 1, 2, 3, 4, 5, 6, 7, 8
+        // Page Faults should be 9
+//        Runnable taskMRU = (new TaskMRU(sequence1, 1, MAX_PAGE_REFERENCE, pageFaults));
+//        pool.submit(taskMRU);
+//        Future<?> futureMRU = pool.submit(taskMRU);
+//
+//        try {
+//            // Wait for the task to complete
+//            futureMRU.get();
+//        } catch (InterruptedException | ExecutionException e) {
+//            e.printStackTrace(); // Handle exceptions
+//        }
+//        System.out.printf("Page Faults: %d\n", pageFaults[1]);
+
+//        // Replacement should be: 1, 2, 1, 3
+//        // Page Faults should be 6
+//        Runnable taskMRU = (new TaskMRU(sequence2, 2, MAX_PAGE_REFERENCE, pageFaults));
+//        pool.submit(taskMRU);
+//        Future<?> futureMRU = pool.submit(taskMRU);
+//
+//        try {
+//            // Wait for the task to complete
+//            futureMRU.get();
+//        } catch (InterruptedException | ExecutionException e) {
+//            e.printStackTrace(); // Handle exceptions
+//        }
+//        System.out.printf("Page Faults: %d\n", pageFaults[2]);
+//
+//        // Replacement should be: 3
+//        // Page Faults should be 4
+        Runnable taskMRU = (new TaskMRU(sequence2, 3, MAX_PAGE_REFERENCE, pageFaults));
+        pool.submit(taskMRU);
+        Future<?> futureMRU = pool.submit(taskMRU);
+
+        try {
+            // Wait for the task to complete
+            futureMRU.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace(); // Handle exceptions
+        }
+        System.out.printf("Page Faults: %d\n", pageFaults[3]);
+    }
+    public static void testLRU() {
+        int[] sequence1 = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+        int[] sequence2 = {1, 2, 1, 3, 2, 1, 2, 3, 4};
+        int[] pageFaults = new int[4];  // 4 because maxMemoryFrames is 3
+
+//        // Replacement should be: 1, 2, 3, 4, 5, 6, 7, 8
+//        // Page Faults should be 9
+//        Runnable taskLRU = new TaskLRU(sequence1, 1, MAX_PAGE_REFERENCE, pageFaults);
+//        pool.submit(taskLRU);
+//        System.out.printf("Page Faults: %d\n", pageFaults[1]);
+//
+        // Replacement should be: 2, 1, 3, 1, 2
+        // Page Faults should be 7
+        Runnable taskLRU = (new TaskLRU(sequence2, 2, MAX_PAGE_REFERENCE, pageFaults));
+        pool.submit(taskLRU);
+        Future<?> futureLRU = pool.submit(taskLRU);
+
+        try {
+            // Wait for the task to complete
+            futureLRU.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace(); // Handle exceptions
+        }
+        System.out.printf("Page Faults: %d\n", pageFaults[2]);
+//
+//        // Replacement should be: 1
+//        // Page Faults should be 4
+//        (new TaskLRU(sequence2, 3, MAX_PAGE_REFERENCE, pageFaults)).run();
+//        System.out.printf("Page Faults: %d\n", pageFaults[3]);
+    }
+    private static void createTasks(int[] sequence, int sim){
         for (int i = 1; i < 101; i++) {
             Runnable fifo = new TaskFIFO(sequence,i,250, pageFaultsFIFO);
             Runnable lru = new TaskLRU(sequence,i,250, pageFaultsLRU);
             Runnable mru = new TaskMRU(sequence,i,250, pageFaultsMRU);
 
-            pool.submit(fifo);
-            pool.submit(lru);
-            pool.submit(mru);
+            Future<?> futureLRU = pool.submit(lru);
+            Future<?> futureFIFO = pool.submit(fifo);
+            Future<?> futureMRU = pool.submit(mru);
+
+            try {
+                // Wait for the task to complete
+                futureLRU.get();
+                futureFIFO.get();
+                futureMRU.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace(); // Handle exceptions
+            }
+            addMin(findMin(i));
         }
+        fifoReport.detection(sim, pageFaultsFIFO);
     }
 
     private static void addMin(int num){
@@ -114,5 +219,34 @@ public class Assign6 {
             return -1;
         }
         return 10;
+    }
+}
+class AnomalyReport{
+    int total;
+    int delta;
+    String reportString;
+
+    public AnomalyReport(){
+        total = 0;
+        delta = 0;
+        reportString="";
+    }
+    public void report(){
+        System.out.println(reportString);
+        System.out.println("Anomaly detected " + total + "times in 10000 simulations with a max delta of " + delta);
+    }
+
+    public void detection(int sim, int[] pageFaults){
+        for(int i=0; i< pageFaults.length-1; i++){
+            if(pageFaults[i] < pageFaults[i+1] && pageFaults[i] !=0){
+                int curDelta = pageFaults[i+1] - pageFaults[i];
+                reportString += String.format("Anomaly detected simulation #%03d - %d PF's @ %d frames vs. %d PF's @ %d frames (Δ%d)\n",
+                        sim, pageFaults[i], i, pageFaults[i+1], i+1, curDelta);
+                if(delta<curDelta){
+                    delta = curDelta;
+                }
+                total++;
+            }
+        }
     }
 }
