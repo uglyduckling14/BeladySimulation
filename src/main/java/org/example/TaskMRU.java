@@ -1,6 +1,5 @@
 package org.example;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -25,35 +24,40 @@ public class TaskMRU implements Runnable {
     @Override
     public void run() {
         int faults = 0;
-        HashSet<Integer> currentPages = new HashSet<>();
-        HashMap<Integer, Integer> indexes = new HashMap<>();
-        int i =0;
-        for (int page: this.sequence) {
-            if(currentPages.size() < this.maxMemoryFrames){
-                if(!currentPages.contains(page)){
+        HashSet<Integer> currentPages = new HashSet<>(this.maxMemoryFrames);
+        HashMap<Integer, Integer> indexes = new HashMap<>(this.maxMemoryFrames);
+        int i = 0;
+
+        for (int page : this.sequence) {
+            if (currentPages.size() < this.maxMemoryFrames) {
+                if (!currentPages.contains(page)) {
                     currentPages.add(page);
                     faults++;
                 }
                 indexes.put(page, i);
-            }else{
-                if(!currentPages.contains(page)){
-                    int mru = -1;
-                    int index = -1;
+            } else {
+                if (!currentPages.contains(page)) {
 
-                    for (int temp : currentPages) {
-                        if (indexes.containsKey(temp) && indexes.get(temp) > mru) {
-                            mru = indexes.get(temp);
-                            index = temp;
-                        }
-                    }
+                    int index = indexes.size()-1;
+                    int mru = -1;
+
+//                    for (int temp : currentPages) {
+//                        if (indexes.containsKey(temp) && indexes.get(temp) > mru) {
+//                            mru = indexes.get(temp);
+//                            index = temp;
+//                        }
+//                    }
                     currentPages.remove(index);
                     indexes.remove(index);
                     currentPages.add(page);
                     faults++;
+
                 }
+                indexes.put(page, i);
             }
             i++;
         }
+
         pageFaults[maxMemoryFrames] = faults;
     }
 }
